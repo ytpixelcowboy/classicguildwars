@@ -31,3 +31,10 @@ body {
     text-wrap: balance;
   }
 }
+
+.event-progress_enable {
+  background-color: yellow;
+}
+.event-progress_disabled {
+  background-color: grey;
+}
