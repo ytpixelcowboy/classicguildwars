@@ -4,6 +4,41 @@ import { useState, useEffect } from "react"
 
 export default function Drafting() {
 
+    const socket = new WebSocket(`ws://192.168.68.101:5000`);
+
+    socket.addEventListener('open', (event)=>{
+        
+    })
+
+    socket.addEventListener('connection', (event)=>{
+        socket.addEventListener('message', (event)=>{
+            console.log("Connected to Server");
+            socket.send(JSON.stringify({
+                'intent' : 'startBattle',
+                'battleId' : "57285835",
+                "userId" : "0x1"
+            }));
+        })
+    })
+
+    socket.addEventListener('error', (event)=>{
+        console.log(event)
+    })
+
+    
+
+
+    socket.addEventListener('close', (event)=>{
+        socket.send(JSON.stringify({
+            'intent' : 'endBattle',
+            'battleId' : "57285835",
+            "userId" : "0x1"
+        }));
+    })
+
+    socket.onclose
+    
+
     var [progress, setProgress] = useState<number>(1);
 
     return (
