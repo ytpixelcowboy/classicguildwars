@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 
 export default function Drafting() {
 
-    var [progress, setProgress] = useState<number>(0);
+    var [progress, setProgress] = useState<number>(1);
 
     return (
         <main className="min-h-screen flex flex-col justify-normal p-24 bg-bg-sub">
@@ -12,11 +12,11 @@ export default function Drafting() {
                 <div className="w-full md:w-[400px] h-[30px] flex flex-row justify-center items-center">
                     <div className="flex-1 flex-col justify-start mr-5">
                         <p>Axie Drafting</p>
-                        <div className="w-full p-1 bg-yellow-300 disabled:bg-yellow-700 rounded-2xl"/>
+                        <div className={`w-full mt-2 p-1  ${(progress == 0)?'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`}/>
                     </div>
                     <div className="flex-1 flex-col justify-start ml-5">
                         <p>Banning Phase</p>
-                        <div className={`w-full p-1  ${(progress == 1)?'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`}/>
+                        <div className={`w-full mt-2  p-1  ${(progress == 1)?'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`}/>
                     </div>
                 </div>
             </div>
