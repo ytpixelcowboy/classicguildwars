@@ -11,7 +11,7 @@ export default function Home() {
   function func_joinBattle(){
 
     if(input?.toString().trim() != null || input?.toString().trim() == ""){
-      router.push(`/invitation/${input}`)
+      router.push(`/colliseum/${input}`)
     }
   }
 
