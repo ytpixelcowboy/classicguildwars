@@ -1,43 +1,32 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/router";
+import { getUserAddressToLocal} from "@/utils/LocalStorageUtil";
 
-export default function Drafting() {
+export default function DraftingPage({params} : {params : {battleId : string}}) {
 
-    const socket = new WebSocket(`ws://192.168.68.101:5000`);
+    const [battleStarted, setIsBattleStarted] = useState<boolean>();
+
+    const socket = new WebSocket(`ws://192.168.68.102:4020/`);
 
     socket.addEventListener('open', (event)=>{
-        
-    })
-
-    socket.addEventListener('connection', (event)=>{
-        socket.addEventListener('message', (event)=>{
-            console.log("Connected to Server");
-            socket.send(JSON.stringify({
-                'intent' : 'startBattle',
-                'battleId' : "57285835",
-                "userId" : "0x1"
-            }));
-        })
-    })
-
-    socket.addEventListener('error', (event)=>{
-        console.log(event)
-    })
-
-    
-
-
-    socket.addEventListener('close', (event)=>{
         socket.send(JSON.stringify({
-            'intent' : 'endBattle',
-            'battleId' : "57285835",
-            "userId" : "0x1"
+            'battleId' : params.battleId,
+            'intent' : 'ping',
+            "userId" : getUserAddressToLocal()
         }));
     })
 
-    socket.onclose
-    
+    socket.addEventListener('connection', (event)=>{
+
+        socket.addEventListener('error', (event)=>{
+            console.log(event)
+        })
+    })
+
+
+
 
     var [progress, setProgress] = useState<number>(1);
 
