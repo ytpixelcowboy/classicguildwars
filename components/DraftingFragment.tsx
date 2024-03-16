@@ -44,7 +44,7 @@ interface SocketResponse{
 
 export default function DraftinFragment({params} : {params : {battleId : string, address : string}}) {
 
-    const socket = new WebSocket(`ws://192.168.68.102:4020`);
+    const socket = new WebSocket(`ws://192.168.56.1:4020`);
 
     var [progress, setProgress] = useState<number>(0);
     const [client_address,setClient_address] = useState<string>();

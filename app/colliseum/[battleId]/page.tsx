@@ -61,7 +61,7 @@ export default function InvitationPage({params} : {params : {battleId : string}}
   }
 
   function connectToWebsocket(){
-    const socket = new WebSocket(`ws://192.168.68.102:4020`);
+    const socket = new WebSocket(`ws://192.168.56.1:4020`);
 
     setConnectingState(true);
     
