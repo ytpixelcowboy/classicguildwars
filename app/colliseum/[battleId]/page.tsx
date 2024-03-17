@@ -10,36 +10,39 @@ import DraftingFragment from "@/components/DraftingFragment";
 import BanningFragment from "@/components/BanningFragment";
 import dynamic from "next/dynamic";
 
-interface SocketResponse{
-  intent : string,
-  msg? : string,
-  status? : number,
-  battleId : string,
-  userId : string,
-  data? : BattleInfo,
+import { env } from "process";
+
+interface SocketResponse {
+  intent: string,
+  msg?: string,
+  status?: number,
+  battleId: string,
+  userId: string,
+  data?: BattleInfo,
 }
 
-interface BattleInfo{
-  battleId : string,
-  status : number,
-  phase : number,
-  createdBy : string,
-  startedAt : number,
-  endedAt : number,
-  client1 : ClientInfo,
-  client2 : ClientInfo
+interface BattleInfo {
+  battleId: string,
+  status: number,
+  phase: number,
+  createdBy: string,
+  startedAt: number,
+  endedAt: number,
+  client1: ClientInfo,
+  client2: ClientInfo
 }
 
-interface ClientInfo{
-  address : string,
-  status : number,
-  isBanTurn : boolean,
-  timeBank : number,
-  axies : string[],
-  bannedAxies : string[],
+interface ClientInfo {
+  address: string,
+  status: number,
+  hasAxiesDrafted: boolean,
+  isBanTurn: boolean,
+  timeBank: number,
+  axies: string[],
+  bannedAxies: string[],
 }
 
-export default function InvitationPage({params} : {params : {battleId : string}}) {
+export default function InvitationPage({ params }: { params: { battleId: string } }) {
   const router = useRouter();
 
   //Connectivity Controller
@@ -60,68 +63,74 @@ export default function InvitationPage({params} : {params : {battleId : string}}
     });
   }
 
-  function connectToWebsocket(){
-    const socket = new WebSocket(`ws://192.168.56.1:4020`);
+  function connectToWebsocket() {
+    const socket = new WebSocket(`ws://192.168.68.102:4020`);
 
     setConnectingState(true);
-    
-    socket.addEventListener('open', (event)=>{
+
+    socket.addEventListener('open', (event) => {
       console.log("Connected.")
 
       socket.send(JSON.stringify({
-        intent : "joinBattle",
-        battleId : params.battleId,
-        userId : getUserAddressToLocal()
+        intent: "joinBattle",
+        battleId: params.battleId,
+        userId: getUserAddressToLocal()
       }));
 
     })
 
-    socket.addEventListener('message', (event)=>{
-      const res : SocketResponse = JSON.parse(event.data);
+    socket.addEventListener('message', (event) => {
+      const res: SocketResponse = JSON.parse(event.data);
 
-      if(res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 1){
+      if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 1) {
         console.log("Connection Permitted");
         socket.send(JSON.stringify({
-            'intent' : 'ping',
-            'battleId' : params.battleId,
-            "userId" : getUserAddressToLocal()
+          'intent': 'ping',
+          'battleId': params.battleId,
+          "userId": getUserAddressToLocal()
         }));
 
         setBattleIdValidStatus(true);
-      }else if(res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 0){
+      } else if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 0) {
         console.log('Failed to join battle: ', res.msg);
         setErrMsg(res.msg);
         setConnectingState(false);
-      }else if(res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == -1){
+      } else if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == -1) {
         console.log('Failed to join battle: ', res.msg);
         setErrMsg(res.msg);
         setConnectingState(false);
       }
 
       //Check battle state
-      if(isBattleIdValidated){
-        if(res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == address){
+      if (isBattleIdValidated) {
+        if (res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == address) {
           setProgress(res.data?.phase || 0);
         }
       }
     })
+
+    socket.addEventListener('close',(event)=>{
+      router.refresh();
+    })
   }
-
-  
-
+ 
   return (
-    <main className='flex min-h-screen flex-col justify-center items-center p-24 bg-bg-sub'>
+    <main className='flex min-h-screen flex-col justify-center items-center bg-gradient-radial from-blue-950 to-blue-900 p-10'>
       {
         (isBattleIdValidated)
           ?
-          <div className="w-full h-full">
-            <div className="flex flex-col justify-center items-center mb-10">
-              <div className="w-full md:w-[400px] h-[30px] flex flex-row justify-center items-center">
-                <div className="flex-1 flex-col justify-start mr-5">
+          <div className="w-full h-full xl:w-[1280px]">
+            <div className="flex flex-row justify-center items-center mb-10">
+              <div className="min-w-[200px] flex flex-row items-center">
+                <Image src={"/icons/free.png"} height={50} width={50} alt={""} unoptimized={true} />
+                <div className="flex flex-col justify-start ml-5">
                   <p>Axie Drafting</p>
                   <div className={`w-full mt-2 p-1  ${(progress == 0) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
                 </div>
-                <div className="flex-1 flex-col justify-start ml-5">
+              </div>
+              <div className="min-w-[200px] flex flex-row items-center">
+                <Image src={"/icons/banned.png"} height={50} width={50} alt={""} unoptimized={true} />
+                <div className="flex flex-col justify-start ml-5">
                   <p>Banning Phase</p>
                   <div className={`w-full mt-2  p-1  ${(progress == 1) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
                 </div>
@@ -130,10 +139,10 @@ export default function InvitationPage({params} : {params : {battleId : string}}
             <div>
               {
                 (progress == 0)
-                ?
-                <DraftingFragment params={{ battleId: params.battleId, address: address }} />
-                :
-                <BanningFragment params={{ battleId: params.battleId, address: address }} />
+                  ?
+                  <DraftingFragment params={{ battleId: params.battleId, address: address }} />
+                  :
+                  <BanningFragment params={{ battleId: params.battleId, address: address }} />
               }
             </div>
           </div>
@@ -163,7 +172,7 @@ export default function InvitationPage({params} : {params : {battleId : string}}
           </div>
       }
 
-      
+
     </main>
   )
 }

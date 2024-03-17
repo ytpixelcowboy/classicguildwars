@@ -13,7 +13,7 @@ interface Axie {
   }
 
 export default function BanningFragment({params} : {params : {battleId : string, address : string}}) {
-    const socket = new WebSocket(`ws://192.168.56.1:4020`);
+    const socket = new WebSocket(`ws://192.168.68.102:4020`);
 
     const [battleStarted, setIsBattleStarted] = useState<boolean>();
     const [client1_address] = useState<string>();
