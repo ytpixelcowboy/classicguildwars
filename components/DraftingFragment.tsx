@@ -64,7 +64,8 @@ export default function DraftinFragment({ params }: { params: { battleId: string
     socket.addEventListener('message', (event) => {
         const res: SocketResponse = JSON.parse(event.data);
         console.log("Drafting : "+ JSON.parse(JSON.stringify(res.data)));
-        if (res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == getUserAddressToLocal()) {
+        
+        if (res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == params.address) {
             console.log("Parsing battle info")
             if (params.address == res.data?.client1.address) {
                 setClient_address(res.data?.client1.address);
@@ -73,14 +74,21 @@ export default function DraftinFragment({ params }: { params: { battleId: string
                 
                 const res_axies = res.data.client1.axies as string[];
                 console.log(res_axies);
-                setClientAxies([...res_axies]);
+
+                if(res_axies.length == 13){
+                    setClientAxies([...res_axies]);
+                }
             } else {
                 setClient_address(res.data?.client2.address);
                 setClient2_address(res.data?.client1.address);
 
                 const res_axies = res.data.client2.axies as string[];
                 console.log(res_axies);
-                setClientAxies([...res_axies]);
+
+                if(res_axies.length == 13){
+                    setClientAxies([...res_axies]);
+                }
+                
             }
         }
     })
@@ -94,6 +102,16 @@ export default function DraftinFragment({ params }: { params: { battleId: string
             }));
         })
     },[])
+
+    function requestBattleInfo(){
+        if(socket.OPEN){
+            socket.send(JSON.stringify({
+                'battleId': params.battleId,
+                'intent': 'battleInfo',
+                'userId' : getUserAddressToLocal()
+            }));
+        }
+    }
 
     function submitDraftingEntry(){
         if(socket.OPEN){

@@ -46,14 +46,14 @@ export default function InvitationPage({ params }: { params: { battleId: string 
   const router = useRouter();
 
   //Connectivity Controller
-  var [isConnected, setConnectionStatus] = useState<boolean>();
   var [isBattleIdValidated, setBattleIdValidStatus] = useState<boolean>();
-  var [connectionBridging, setConnectionBridging] = useState<boolean>(false);
   var [progress, setProgress] = useState<number>(0);
 
   var [errMsg, setErrMsg] = useState<string>();
   var [isConnecting, setConnectingState] = useState<boolean>(false);
   var [address, setAddress] = useState<string | any>();
+
+  const [isWaitingForHandshake_afterDraft, setHandshakeStatus_afterDraft] = useState<boolean>();
 
   function func_connectWallet() {
     console.log("Is wallet connected: " + checkIfConnected())
@@ -79,7 +79,7 @@ export default function InvitationPage({ params }: { params: { battleId: string 
 
     })
 
-    socket.addEventListener('message', (event) => {
+    socket.addEventListener('message', async (event) => {
       const res: SocketResponse = JSON.parse(event.data);
 
       if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 1) {
@@ -104,7 +104,24 @@ export default function InvitationPage({ params }: { params: { battleId: string 
       //Check battle state
       if (isBattleIdValidated) {
         if (res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == address) {
+
           setProgress(res.data?.phase || 0);
+
+
+          if(res.data?.client1.address == getUserAddressToLocal() && res.data?.client1.hasAxiesDrafted){
+
+            //add reload delay loop here
+            await delay(1500);
+
+            //Checks if this use has to wait for the other one
+            if(res.data?.client1.hasAxiesDrafted && res.data.client2.hasAxiesDrafted){
+              setHandshakeStatus_afterDraft(true);
+            }
+          }else{
+
+          }
+
+          //TODO
         }
       }
     })
@@ -112,6 +129,10 @@ export default function InvitationPage({ params }: { params: { battleId: string 
     socket.addEventListener('close',(event)=>{
       router.refresh();
     })
+
+    function delay(milliseconds: number): any {
+      return new Promise(resolve => setTimeout(resolve, milliseconds));
+  }
   }
  
   return (

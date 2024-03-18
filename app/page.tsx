@@ -16,10 +16,10 @@ export default function Home() {
   }
 
   return (
-    <main className='flex min-h-screen flex-col justify-center items-center p-24 bg-bg-sub'>
+    <main className='flex min-h-screen flex-col justify-center items-center p-24 bg-gradient-radial from-blue-950 to-blue-900'>
       <div className="w-fit flex flex-col justify-normal items-center">
         <Image src={"/icons/Sword.png"} width={130} height={130} alt="" unoptimized={true} className="inline-block" />
-        <p className="mt-5 text-white font-bold text-6xl">Classic Guild Wars</p>
+        <p className="text-white font-bold text-4xl">Classic Guild Wars</p>
 
         <div className="w-fit mt-20">
           <p className="text-white font-semibold text-lg">Enter battle invitation id</p>
