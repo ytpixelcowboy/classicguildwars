@@ -47,7 +47,7 @@ interface ClientInfo {
 
 export default function DraftinFragment({ params }: { params: { battleId: string, address: string } }) {
 
-    const socket = new WebSocket(`ws://192.168.68.102:4020`);
+    const socket = new WebSocket(`ws://${process.env.NEXT_PUBLIC_WS}`);
 
     var [progress, setProgress] = useState<number>(0);
     const [client_address, setClient_address] = useState<string>();
@@ -61,18 +61,11 @@ export default function DraftinFragment({ params }: { params: { battleId: string
     }
     //const socket = params.currentSocket;
 
-    socket.addEventListener('open', (event) => {
-        socket.send(JSON.stringify({
-            'battleId': params.battleId,
-            'intent': 'battleInfo',
-            'userId' : getUserAddressToLocal()
-        }));
-    })
-
     socket.addEventListener('message', (event) => {
         const res: SocketResponse = JSON.parse(event.data);
-
-        if (res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == params.address) {
+        console.log("Drafting : "+ JSON.parse(JSON.stringify(res.data)));
+        if (res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == getUserAddressToLocal()) {
+            console.log("Parsing battle info")
             if (params.address == res.data?.client1.address) {
                 setClient_address(res.data?.client1.address);
                 setClient2_address(res.data?.client2.address);
@@ -91,6 +84,16 @@ export default function DraftinFragment({ params }: { params: { battleId: string
             }
         }
     })
+
+    useEffect(()=>{
+        socket.addEventListener('open', (event) => {
+            socket.send(JSON.stringify({
+                'battleId': params.battleId,
+                'intent': 'battleInfo',
+                'userId' : getUserAddressToLocal()
+            }));
+        })
+    },[])
 
     function submitDraftingEntry(){
         if(socket.OPEN){
