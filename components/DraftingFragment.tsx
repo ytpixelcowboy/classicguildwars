@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react"
-import { getUserAddressToLocal } from "@/utils/LocalStorageUtil";
 
 interface Axie {
     id: string,
@@ -42,95 +41,97 @@ interface ClientInfo {
     bannedAxies: string[],
 }
 
-export default function DraftinFragment({ params }: { params: { battleId: string, address: string, client2_address : string } }) {
+export default function DraftinFragment({ params }: { params: {socket: WebSocket, battleId: string, address: string, client2_address : string } }) {
 
-    const socket = new WebSocket(`ws://${process.env.NEXT_PUBLIC_WS}`);
-
-    var [progress, setProgress] = useState<number>(0);
-    const [clientAxies, setClientAxies] = useState<string[]>(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
-
+    const [clientAxies, setClientAxies] = useState<string[]>(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"]);
+    //const [clientAxies, setClientAxies] = useState<string[]>(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
     const [isSubmitDraft, setIsSubmitDraft] = useState<boolean>(false);
-
 
     function delay(milliseconds: number): any {
         return new Promise(resolve => setTimeout(resolve, milliseconds));
     }
     //const socket = params.currentSocket;
 
-    socket.addEventListener('message', (event) => {
-        const res: SocketResponse = JSON.parse(event.data);
-        console.log("Drafting : "+ JSON.stringify(res.data));
-        
-        if (res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == params.address) {
-            console.log("Parsing battle info")
-
-            if (params.address == res.data?.client1.address) {
-                
-                const res_axies = res.data.client1.axies as string[];
-                console.log(res_axies);
-
-                if(res_axies.length == 13){
-                    setClientAxies([...res_axies]);
-                }
-            } else {
-                const res_axies = res.data.client2.axies as string[];
-                console.log(res_axies);
-
-                if(res_axies.length == 13){
-                    setClientAxies([...res_axies]);
-                }
-                
-            }
-        }
-
-        if(res.intent == "respondDraftAxie" && res.userId == params.address && res.channel == params.battleId){
-            console.log("Drafting : Draft has been submitted and verified")
-            //Notif the page controller that user is done with drafting
-            requestBattleInfo();
-        }
-    })
-
     useEffect(()=>{
-        socket.addEventListener('open', (event) => {
-            socket.send(JSON.stringify({
+        params.socket.addEventListener('open', (event) => {
+            params.socket.send(JSON.stringify({
                 'battleId': params.battleId,
                 'intent': 'battleInfo',
-                'userId' : getUserAddressToLocal()
+                'userId' : params.address
             }));
+        })
+
+
+        console.log("FromParams: " + params.address);
+        console.log("FromParams: " + params.battleId);
+        console.log("FromParams: " + params.client2_address);
+
+            
+        params.socket.addEventListener('message', (event) => {
+            const res: SocketResponse = JSON.parse(event.data);
+    
+            console.log("Drafting : "+ JSON.stringify(res.data));
+            
+            if (res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == params.address) {
+                console.log("Parsing battle info")
+    
+                if (params.address == res.data?.client1.address) {
+                    
+                    const res_axies = res.data.client1.axies as string[];
+                    console.log(res_axies);
+    
+                    if(res_axies.length == 13){
+                        setClientAxies([...res_axies]);
+                    }
+                } else {
+                    const res_axies = res.data.client2.axies as string[];
+                    console.log(res_axies);
+    
+                    if(res_axies.length == 13){
+                        setClientAxies([...res_axies]);
+                    }
+                    
+                }
+            }
+    
+            if(res.intent == "respondDraftAxie" && res.battleId == params.battleId){
+                console.log("Drafting : Draft has been submitted and verified");
+                //Notif the page controller that user is done with drafting
+                requestBattleInfo();
+            }
         })
     },[])
 
 
     function requestBattleInfo(){
-        if(socket.OPEN){
-            socket.send(JSON.stringify({
+        if(params.socket.OPEN){
+            params.socket.send(JSON.stringify({
                 'battleId': params.battleId,
                 'intent': 'battleInfo',
-                'userId' : getUserAddressToLocal()
+                'userId' : params.address
             }));
         }
     }
 
     function submitDraftingEntry(){
-        if(socket.OPEN){
-            socket.send(JSON.stringify({
+        if(params.socket.OPEN){
+            params.socket.send(JSON.stringify({
                 'channel': params.battleId,
                 'intent': 'draftAxie',
-                'userId' : getUserAddressToLocal(),
+                'userId' : params.address,
                 'data' : clientAxies
             }));
 
-            socket.send(JSON.stringify({
+            //request handshake
+            params.socket.send(JSON.stringify({
                 'battleId': params.battleId,
                 'intent': 'requestHandshake',
-                'createdBy' : getUserAddressToLocal(),
+                'userId' : params.address,
                 'respondent': params.client2_address,
                 'reason' : 'upgradePhase'
             }));
 
             setIsSubmitDraft(true);
-
-            socket.close();
         }else{
             console.log("Websocket is not connected");
             setIsSubmitDraft(false);
@@ -138,7 +139,7 @@ export default function DraftinFragment({ params }: { params: { battleId: string
     }
 
     return (
-        <div className="w-full min-h-screen flex flex-col justify-normal">
+        <div className="w-full min-h-screen flex flex-col justify-normal p-10">
             <div className="flex flex-row justify-between">
                 <div>
                     <p className="text-4xl font-bold mb-5">Axie Drafting</p>

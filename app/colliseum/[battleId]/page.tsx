@@ -12,8 +12,10 @@ import dynamic from "next/dynamic";
 
 import { env } from "process";
 import DraftingWaitingFragment from "@/components/DraftingWaitingFragment";
+import { Socket } from "dgram";
 
 interface SocketResponse {
+  channel?: string;
   intent: string,
   msg?: string,
   status?: number,
@@ -43,6 +45,12 @@ interface ClientInfo {
   bannedAxies: string[],
 }
 
+const socket = new WebSocket(`ws://${process.env.NEXT_PUBLIC_WS}`);
+
+socket.addEventListener('open', (event) => {
+  console.log("Connected.")
+})
+
 export default function InvitationPage({ params }: { params: { battleId: string } }) {
   const router = useRouter();
 
@@ -68,63 +76,57 @@ export default function InvitationPage({ params }: { params: { battleId: string 
     });
   }
 
-  function connectToWebsocket() {
-    const socket = new WebSocket(`ws://${process.env.NEXT_PUBLIC_WS}`);
-
+  async function connectToWebsocket() {
+    //if the websocket is connected
     setConnectingState(true);
 
-    socket.addEventListener('open', (event) => {
-      console.log("Connected.")
-
+    //If the socket is now open
+    if(socket.OPEN){
       socket.send(JSON.stringify({
         intent: "joinBattle",
         battleId: params.battleId,
         userId: getUserAddressToLocal()
       }));
-
-    })
-
-    socket.addEventListener('message', async (event) => {
-      let isBattleIdValid = false;
-
-      const res: SocketResponse = JSON.parse(event.data);
-
-      if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 1) {
-        console.log("Connection Permitted");
-        socket.send(JSON.stringify({
-          'intent': 'ping',
-          'battleId': params.battleId,
-          "userId": getUserAddressToLocal()
-        }));
-
-        //Reload Battle Info
-        requestBattleInfo();
-
-        setBattleIdValidStatus(true);
-        isBattleIdValid = true;
-      } else if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 0) {
-        console.log('Failed to join battle: ', res.msg);
-        setErrMsg(res.msg);
-        setConnectingState(false);
-      } else if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == -1) {
-        console.log('Failed to join battle: ', res.msg);
-        setErrMsg(res.msg);
-        setConnectingState(false);
-      }
-
       
-      //Check battle state
-      if (isBattleIdValid) {
-        console.log("Page Controller 1: " + JSON.stringify(res))
 
+      socket.addEventListener('message', async (event) => {
+        
+        event.stopPropagation();
+  
+        const res: SocketResponse = JSON.parse(event.data);
+  
+        if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 1) {
+          socket.send(JSON.stringify({
+            'intent': 'ping',
+            'battleId': params.battleId,
+            "userId": getUserAddressToLocal()
+          }));
+  
+          //Reload Battle Info
+          console.log("Connection Permitted, requesting battle info");
+          requestBattleInfo();
+  
+          setBattleIdValidStatus(true);
+
+        } else if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 0) {
+          console.log('Failed to join battle: ', res.msg);
+          setErrMsg(res.msg);
+          setConnectingState(false);
+        } else if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == -1) {
+          console.log('Failed to join battle: ', res.msg);
+          setErrMsg(res.msg);
+          setConnectingState(false);
+        }
+  
+        
+        //Check battle state
         if (res.intent == "resultBattleInfo" && res.battleId == params.battleId) {
           const data = res.data as BattleInfo;
 
-          console.log("Page Controller 2: " + JSON.stringify(res))
-          setProgress(res.data?.phase!);
+          setProgress(res.data?.phase);
 
           console.log("Page Controller: this user is client1 : Server" + data.client1.address + " Local: " + getUserAddressToLocal())
-          console.log("Page Controller: this user is client2 : Server" + data.client1.address + " Local: " + getUserAddressToLocal())
+          console.log("Page Controller: this user is client2 : Server" + data.client2.address + " Local: " + getUserAddressToLocal())
 
           //Check if this client is client1 in the server
           if (data.client1.address == getUserAddressToLocal()) {
@@ -153,56 +155,56 @@ export default function InvitationPage({ params }: { params: { battleId: string 
               setHasBothClientDrafted(true);
             }
           }
-
-          //TODO
         }
-      }
-    })
-
-    socket.addEventListener('close', (event) => {
-      router.refresh();
-    })
-
-    function delay(milliseconds: number): any {
-      return new Promise(resolve => setTimeout(resolve, milliseconds));
+      })
+    }else{
+      await delay(2000);
+      setConnectingState(false)
     }
-
-    function requestBattleInfo(){
-      if(socket.OPEN){
-          socket.send(JSON.stringify({
-              'battleId': params.battleId,
-              'intent': 'battleInfo',
-              'userId' : getUserAddressToLocal()
-          }));
-      }
   }
+
+  function delay(milliseconds: number): any {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
+  }
+
+  function requestBattleInfo(){
+    if(socket.OPEN){
+        socket.send(JSON.stringify({
+            'battleId': params.battleId,
+            'intent': 'battleInfo',
+            'userId' : getUserAddressToLocal()
+        }));
+    }
   }
 
   return (
-    <main className='flex min-h-screen flex-col justify-center items-center bg-gradient-radial from-blue-950 to-blue-900 p-10'>
+    <main className='flex min-h-screen flex-col justify-center items-center bg-gradient-radial from-blue-950 to-blue-900'>
       {
         (isBattleIdValidated)
           ?
           <div className="w-full h-full flex flex-col justify-normal items-center">
-            <div className="w-full h-[40px] flex flex-row justify-between items-center">
-              <div className="min-w-[200px] max-w-[250px] h-full bg-blue-600 rounded-lg text-white overflow-x-auto p-2">
-                <p>{clientAddress}</p>
+            <div className="hidden w-full h-fit flex flex-row justify-end items-center">
+              <div className="w-fit h-[40px] bg-blue-600 rounded-lg text-white overflow-x-hidden p-2 m-5">
+                <p className="min-w-[200px] max-w-[250px] text-ellipsis overflow-hidden">{clientAddress}</p>
               </div>
             </div>
-            <div className="w-full h-full xl:w-[1280px]">
-              <div className="flex flex-row justify-center items-center mb-10">
+            <div className="w-full h-full xl:w-[1280px] mt-10">
+              <div className="flex flex-row justify-center items-center mb-5">
+                <div className="w-fit mr-5">
+                  <p>Battle Phase</p>
+                </div>
                 <div className="min-w-[200px] flex flex-row items-center">
-                  <Image src={"/icons/free.png"} height={50} width={50} alt={""} unoptimized={true} />
+                  <Image src={"/icons/free.png"} height={40} width={40} alt={""} unoptimized={true} />
                   <div className="flex flex-col justify-start ml-5">
                     <p>Axie Drafting</p>
-                    <div className={`w-full mt-2 p-1  ${(progress == 0) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
+                    <div className={`w-full mt-1 p-1  ${(progress == 0) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
                   </div>
                 </div>
                 <div className="min-w-[200px] flex flex-row items-center">
-                  <Image src={"/icons/banned.png"} height={50} width={50} alt={""} unoptimized={true} />
+                  <Image src={"/icons/banned.png"} height={40} width={40} alt={""} unoptimized={true} />
                   <div className="flex flex-col justify-start ml-5">
                     <p>Banning Phase</p>
-                    <div className={`w-full mt-2  p-1  ${(progress == 1) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
+                    <div className={`w-full mt-1  p-1  ${(progress == 1) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
                   </div>
                 </div>
               </div>
@@ -210,13 +212,17 @@ export default function InvitationPage({ params }: { params: { battleId: string 
                 {
                   (progress == 0 && !hasAxiesDrafted)
                     ?
-                    <DraftingFragment params={{ battleId: params.battleId, address: clientAddress, client2_address: client2Address }} />
+                    <DraftingFragment params={{ socket: socket, battleId: params.battleId, address: clientAddress, client2_address: client2Address }} />
                     :
                     (progress == 0 && hasAxiesDrafted)
                       ?
                       <DraftingWaitingFragment />
                       :
-                      <BanningFragment params={{ battleId: params.battleId, address: address }} />
+                      (progress == 1 && hasBothClientDrafted)
+                      ?
+                      <BanningFragment params={{ socket: socket, battleId: params.battleId, address: clientAddress, client2_address: client2Address }} />
+                      :
+                      <span/>
                 }
               </div>
             </div>
