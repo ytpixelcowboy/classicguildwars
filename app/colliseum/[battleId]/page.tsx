@@ -11,6 +11,7 @@ import BanningFragment from "@/components/BanningFragment";
 import dynamic from "next/dynamic";
 
 import { env } from "process";
+import DraftingWaitingFragment from "@/components/DraftingWaitingFragment";
 
 interface SocketResponse {
   intent: string,
@@ -18,7 +19,7 @@ interface SocketResponse {
   status?: number,
   battleId: string,
   userId: string,
-  data?: BattleInfo,
+  data: BattleInfo | any,
 }
 
 interface BattleInfo {
@@ -49,11 +50,15 @@ export default function InvitationPage({ params }: { params: { battleId: string 
   var [isBattleIdValidated, setBattleIdValidStatus] = useState<boolean>();
   var [progress, setProgress] = useState<number>(0);
 
+  const [clientAddress, setClient_address] = useState<string>("");
+  const [client2Address, setClient2_address] = useState<string>("");
+
   var [errMsg, setErrMsg] = useState<string>();
   var [isConnecting, setConnectingState] = useState<boolean>(false);
   var [address, setAddress] = useState<string | any>();
 
-  const [isWaitingForHandshake_afterDraft, setHandshakeStatus_afterDraft] = useState<boolean>();
+  const [hasAxiesDrafted, setHasAxiesDrafted] = useState<boolean>(false);
+  const [hasBothClientDrafted, setHasBothClientDrafted] = useState<boolean>();
 
   function func_connectWallet() {
     console.log("Is wallet connected: " + checkIfConnected())
@@ -80,6 +85,8 @@ export default function InvitationPage({ params }: { params: { battleId: string 
     })
 
     socket.addEventListener('message', async (event) => {
+      let isBattleIdValid = false;
+
       const res: SocketResponse = JSON.parse(event.data);
 
       if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 1) {
@@ -90,7 +97,11 @@ export default function InvitationPage({ params }: { params: { battleId: string 
           "userId": getUserAddressToLocal()
         }));
 
+        //Reload Battle Info
+        requestBattleInfo();
+
         setBattleIdValidStatus(true);
+        isBattleIdValid = true;
       } else if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 0) {
         console.log('Failed to join battle: ', res.msg);
         setErrMsg(res.msg);
@@ -101,24 +112,46 @@ export default function InvitationPage({ params }: { params: { battleId: string 
         setConnectingState(false);
       }
 
+      
       //Check battle state
-      if (isBattleIdValidated) {
-        if (res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == address) {
+      if (isBattleIdValid) {
+        console.log("Page Controller 1: " + JSON.stringify(res))
 
-          setProgress(res.data?.phase || 0);
+        if (res.intent == "resultBattleInfo" && res.battleId == params.battleId) {
+          const data = res.data as BattleInfo;
 
+          console.log("Page Controller 2: " + JSON.stringify(res))
+          setProgress(res.data?.phase!);
 
-          if(res.data?.client1.address == getUserAddressToLocal() && res.data?.client1.hasAxiesDrafted){
+          console.log("Page Controller: this user is client1 : Server" + data.client1.address + " Local: " + getUserAddressToLocal())
+          console.log("Page Controller: this user is client2 : Server" + data.client1.address + " Local: " + getUserAddressToLocal())
 
-            //add reload delay loop here
-            await delay(1500);
+          //Check if this client is client1 in the server
+          if (data.client1.address == getUserAddressToLocal()) {
+            setClient_address(data.client1.address!);
+            setClient2_address(data.client2.address!);
+
+            //Set this client drafting status and turn on waiting screen
+            setHasAxiesDrafted(data.client1.hasAxiesDrafted);
 
             //Checks if this use has to wait for the other one
-            if(res.data?.client1.hasAxiesDrafted && res.data.client2.hasAxiesDrafted){
-              setHandshakeStatus_afterDraft(true);
+            if (data.client1.hasAxiesDrafted && data.client2.hasAxiesDrafted) {
+              setHasBothClientDrafted(true);
             }
-          }else{
+          }
 
+          //Check if this client is client2 in the server
+          if (data.client2.address == getUserAddressToLocal()) {
+            setClient_address(data.client2.address);
+            setClient2_address(data.client1.address);
+
+            //Set this client drafting status and turn on waiting screen
+            setHasAxiesDrafted(data.client2.hasAxiesDrafted);
+
+            //Checks if this use has to wait for the other one
+            if (data.client1.hasAxiesDrafted && data.client2.hasAxiesDrafted) {
+              setHasBothClientDrafted(true);
+            }
           }
 
           //TODO
@@ -126,47 +159,69 @@ export default function InvitationPage({ params }: { params: { battleId: string 
       }
     })
 
-    socket.addEventListener('close',(event)=>{
+    socket.addEventListener('close', (event) => {
       router.refresh();
     })
 
     function delay(milliseconds: number): any {
       return new Promise(resolve => setTimeout(resolve, milliseconds));
+    }
+
+    function requestBattleInfo(){
+      if(socket.OPEN){
+          socket.send(JSON.stringify({
+              'battleId': params.battleId,
+              'intent': 'battleInfo',
+              'userId' : getUserAddressToLocal()
+          }));
+      }
   }
   }
- 
+
   return (
     <main className='flex min-h-screen flex-col justify-center items-center bg-gradient-radial from-blue-950 to-blue-900 p-10'>
       {
         (isBattleIdValidated)
           ?
-          <div className="w-full h-full xl:w-[1280px]">
-            <div className="flex flex-row justify-center items-center mb-10">
-              <div className="min-w-[200px] flex flex-row items-center">
-                <Image src={"/icons/free.png"} height={50} width={50} alt={""} unoptimized={true} />
-                <div className="flex flex-col justify-start ml-5">
-                  <p>Axie Drafting</p>
-                  <div className={`w-full mt-2 p-1  ${(progress == 0) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
-                </div>
-              </div>
-              <div className="min-w-[200px] flex flex-row items-center">
-                <Image src={"/icons/banned.png"} height={50} width={50} alt={""} unoptimized={true} />
-                <div className="flex flex-col justify-start ml-5">
-                  <p>Banning Phase</p>
-                  <div className={`w-full mt-2  p-1  ${(progress == 1) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
-                </div>
+          <div className="w-full h-full flex flex-col justify-normal items-center">
+            <div className="w-full h-[40px] flex flex-row justify-between items-center">
+              <div className="min-w-[200px] max-w-[250px] h-full bg-blue-600 rounded-lg text-white overflow-x-auto p-2">
+                <p>{clientAddress}</p>
               </div>
             </div>
-            <div>
-              {
-                (progress == 0)
-                  ?
-                  <DraftingFragment params={{ battleId: params.battleId, address: address }} />
-                  :
-                  <BanningFragment params={{ battleId: params.battleId, address: address }} />
-              }
+            <div className="w-full h-full xl:w-[1280px]">
+              <div className="flex flex-row justify-center items-center mb-10">
+                <div className="min-w-[200px] flex flex-row items-center">
+                  <Image src={"/icons/free.png"} height={50} width={50} alt={""} unoptimized={true} />
+                  <div className="flex flex-col justify-start ml-5">
+                    <p>Axie Drafting</p>
+                    <div className={`w-full mt-2 p-1  ${(progress == 0) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
+                  </div>
+                </div>
+                <div className="min-w-[200px] flex flex-row items-center">
+                  <Image src={"/icons/banned.png"} height={50} width={50} alt={""} unoptimized={true} />
+                  <div className="flex flex-col justify-start ml-5">
+                    <p>Banning Phase</p>
+                    <div className={`w-full mt-2  p-1  ${(progress == 1) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                {
+                  (progress == 0 && !hasAxiesDrafted)
+                    ?
+                    <DraftingFragment params={{ battleId: params.battleId, address: clientAddress, client2_address: client2Address }} />
+                    :
+                    (progress == 0 && hasAxiesDrafted)
+                      ?
+                      <DraftingWaitingFragment />
+                      :
+                      <BanningFragment params={{ battleId: params.battleId, address: address }} />
+                }
+              </div>
             </div>
           </div>
+
           :
           <div className="w-fit flex flex-col justify-normal items-center">
             <Image src={"/icons/Sword.png"} width={130} height={130} alt="" unoptimized={true} className="inline-block" />

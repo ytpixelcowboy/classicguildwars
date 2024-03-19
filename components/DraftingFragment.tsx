@@ -2,11 +2,7 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react"
-import { useRouter } from "next/router";
-import getAxieData from "@/scripts/getAxieData";
-import { env } from "process";
 import { getUserAddressToLocal } from "@/utils/LocalStorageUtil";
-import { Socket } from "dgram";
 
 interface Axie {
     id: string,
@@ -20,7 +16,8 @@ interface SocketResponse {
     intent: string,
     msg?: string,
     status?: number,
-    battleId: string,
+    battleId?: string,
+    channel?: string,
     userId: string,
     data?: BattleInfo | any,
 }
@@ -45,15 +42,14 @@ interface ClientInfo {
     bannedAxies: string[],
 }
 
-export default function DraftinFragment({ params }: { params: { battleId: string, address: string } }) {
+export default function DraftinFragment({ params }: { params: { battleId: string, address: string, client2_address : string } }) {
 
     const socket = new WebSocket(`ws://${process.env.NEXT_PUBLIC_WS}`);
 
     var [progress, setProgress] = useState<number>(0);
-    const [client_address, setClient_address] = useState<string>();
     const [clientAxies, setClientAxies] = useState<string[]>(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
 
-    const [client2_address, setClient2_address] = useState<string>();
+    const [isSubmitDraft, setIsSubmitDraft] = useState<boolean>(false);
 
 
     function delay(milliseconds: number): any {
@@ -63,14 +59,12 @@ export default function DraftinFragment({ params }: { params: { battleId: string
 
     socket.addEventListener('message', (event) => {
         const res: SocketResponse = JSON.parse(event.data);
-        console.log("Drafting : "+ JSON.parse(JSON.stringify(res.data)));
+        console.log("Drafting : "+ JSON.stringify(res.data));
         
         if (res.intent == "resultBattleInfo" && res.battleId == params.battleId && res.userId == params.address) {
             console.log("Parsing battle info")
-            if (params.address == res.data?.client1.address) {
-                setClient_address(res.data?.client1.address);
-                setClient2_address(res.data?.client2.address);
 
+            if (params.address == res.data?.client1.address) {
                 
                 const res_axies = res.data.client1.axies as string[];
                 console.log(res_axies);
@@ -79,9 +73,6 @@ export default function DraftinFragment({ params }: { params: { battleId: string
                     setClientAxies([...res_axies]);
                 }
             } else {
-                setClient_address(res.data?.client2.address);
-                setClient2_address(res.data?.client1.address);
-
                 const res_axies = res.data.client2.axies as string[];
                 console.log(res_axies);
 
@@ -90,6 +81,12 @@ export default function DraftinFragment({ params }: { params: { battleId: string
                 }
                 
             }
+        }
+
+        if(res.intent == "respondDraftAxie" && res.userId == params.address && res.channel == params.battleId){
+            console.log("Drafting : Draft has been submitted and verified")
+            //Notif the page controller that user is done with drafting
+            requestBattleInfo();
         }
     })
 
@@ -102,6 +99,7 @@ export default function DraftinFragment({ params }: { params: { battleId: string
             }));
         })
     },[])
+
 
     function requestBattleInfo(){
         if(socket.OPEN){
@@ -121,6 +119,21 @@ export default function DraftinFragment({ params }: { params: { battleId: string
                 'userId' : getUserAddressToLocal(),
                 'data' : clientAxies
             }));
+
+            socket.send(JSON.stringify({
+                'battleId': params.battleId,
+                'intent': 'requestHandshake',
+                'createdBy' : getUserAddressToLocal(),
+                'respondent': params.client2_address,
+                'reason' : 'upgradePhase'
+            }));
+
+            setIsSubmitDraft(true);
+
+            socket.close();
+        }else{
+            console.log("Websocket is not connected");
+            setIsSubmitDraft(false);
         }
     }
 
@@ -133,7 +146,7 @@ export default function DraftinFragment({ params }: { params: { battleId: string
                     <p className="text-xl text-gray-200">Note: Your enemy can ban X axies after the draft pick phase</p>
                 </div>
                 <div>
-                <button className="h-[50px] w-[200px] pl-6 pr-6 pt-2 pb-2 bg-fg text-white rounded-item-bd drop-shadow-lg disabled:bg-gray-600 disabled:text-gray-400 border-fg-shadow border-4 rounded-lg" onClick={()=>submitDraftingEntry()} disabled={clientAxies.some((obj)=> obj=="")}>{"Confirm"}</button>
+                <button className="h-[50px] w-[200px] pl-6 pr-6 pt-2 pb-2 bg-fg text-white rounded-item-bd drop-shadow-lg disabled:bg-gray-600 disabled:text-gray-400 border-fg-shadow border-4 rounded-lg" onClick={()=>submitDraftingEntry()} disabled={clientAxies.some((obj)=> obj=="" || obj.includes('e') || Number.parseFloat(obj) < 1 ) || isSubmitDraft}>{"Confirm"}</button>
                 </div>
             </div>
 

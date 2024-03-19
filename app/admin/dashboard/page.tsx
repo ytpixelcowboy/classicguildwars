@@ -43,7 +43,6 @@ interface BannedAxiesModel{
 
 export default function AdminDashboard(){
     const router = useRouter();
-    const socket = new WebSocket(`ws://192.168.68.102:4020`);
 
     const [isConnected , setConnectionStatus] = useState<boolean>(false);
     const [liveBattles, setLiveBattles] = useState<LiveBatles[]>();
