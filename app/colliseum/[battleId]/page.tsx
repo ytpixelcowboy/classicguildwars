@@ -5,35 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react"
 import { checkIfConnected, connectRoninWallet } from "@/utils/ConnectWallet";
 import { getUserAddressToLocal } from "@/utils/LocalStorageUtil";
-import DraftinFragment from "@/components/DraftingFragment";
-import DraftingFragment from "@/components/DraftingFragment";
-import BanningFragment from "@/components/BanningFragment";
-import dynamic from "next/dynamic";
 
-import { env } from "process";
-import DraftingWaitingFragment from "@/components/DraftingWaitingFragment";
-import { Socket } from "dgram";
 
-interface SocketResponse {
-  channel?: string;
-  intent: string,
-  msg?: string,
-  status?: number,
-  battleId: string,
-  userId: string,
-  data: BattleInfo | any,
-}
-
-interface BattleInfo {
-  battleId: string,
-  status: number,
-  phase: number,
-  createdBy: string,
-  startedAt: number,
-  endedAt: number,
-  client1: ClientInfo,
-  client2: ClientInfo
-}
+import {io} from "socket.io-client";
+import LobbyFragment from "@/components/LobbyFragment";
 
 interface ClientInfo {
   address: string,
@@ -45,28 +20,17 @@ interface ClientInfo {
   bannedAxies: string[],
 }
 
-const socket = new WebSocket(`ws://${process.env.NEXT_PUBLIC_WS}`);
-
-socket.addEventListener('open', (event) => {
-  console.log("Connected.")
-})
+const io_main = io(`ws://${process.env.NEXT_PUBLIC_WS}`);
 
 export default function InvitationPage({ params }: { params: { battleId: string } }) {
   const router = useRouter();
 
   //Connectivity Controller
   var [isBattleIdValidated, setBattleIdValidStatus] = useState<boolean>();
-  var [progress, setProgress] = useState<number>(0);
-
-  const [clientAddress, setClient_address] = useState<string>("");
-  const [client2Address, setClient2_address] = useState<string>("");
 
   var [errMsg, setErrMsg] = useState<string>();
   var [isConnecting, setConnectingState] = useState<boolean>(false);
   var [address, setAddress] = useState<string | any>();
-
-  const [hasAxiesDrafted, setHasAxiesDrafted] = useState<boolean>(false);
-  const [hasBothClientDrafted, setHasBothClientDrafted] = useState<boolean>();
 
   function func_connectWallet() {
     console.log("Is wallet connected: " + checkIfConnected())
@@ -77,157 +41,63 @@ export default function InvitationPage({ params }: { params: { battleId: string 
   }
 
   async function connectToWebsocket() {
-    //if the websocket is connected
-    setConnectingState(true);
 
-    //If the socket is now open
-    if(socket.OPEN){
-      socket.send(JSON.stringify({
-        intent: "joinBattle",
-        battleId: params.battleId,
-        userId: getUserAddressToLocal()
-      }));
-      
-
-      socket.addEventListener('message', async (event) => {
-        
-        event.stopPropagation();
-  
-        const res: SocketResponse = JSON.parse(event.data);
-  
-        if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 1) {
-          socket.send(JSON.stringify({
-            'intent': 'ping',
-            'battleId': params.battleId,
-            "userId": getUserAddressToLocal()
-          }));
-  
-          //Reload Battle Info
-          console.log("Connection Permitted, requesting battle info");
-          requestBattleInfo();
-  
-          setBattleIdValidStatus(true);
-
-        } else if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == 0) {
-          console.log('Failed to join battle: ', res.msg);
-          setErrMsg(res.msg);
-          setConnectingState(false);
-        } else if (res.intent === "permitJoin" && res.userId === getUserAddressToLocal() && res.status == -1) {
-          console.log('Failed to join battle: ', res.msg);
-          setErrMsg(res.msg);
-          setConnectingState(false);
-        }
-  
-        
-        //Check battle state
-        if (res.intent == "resultBattleInfo" && res.battleId == params.battleId) {
-          const data = res.data as BattleInfo;
-
-          setProgress(res.data?.phase);
-
-          console.log("Page Controller: this user is client1 : Server" + data.client1.address + " Local: " + getUserAddressToLocal())
-          console.log("Page Controller: this user is client2 : Server" + data.client2.address + " Local: " + getUserAddressToLocal())
-
-          //Check if this client is client1 in the server
-          if (data.client1.address == getUserAddressToLocal()) {
-            setClient_address(data.client1.address!);
-            setClient2_address(data.client2.address!);
-
-            //Set this client drafting status and turn on waiting screen
-            setHasAxiesDrafted(data.client1.hasAxiesDrafted);
-
-            //Checks if this use has to wait for the other one
-            if (data.client1.hasAxiesDrafted && data.client2.hasAxiesDrafted) {
-              setHasBothClientDrafted(true);
-            }
-          }
-
-          //Check if this client is client2 in the server
-          if (data.client2.address == getUserAddressToLocal()) {
-            setClient_address(data.client2.address);
-            setClient2_address(data.client1.address);
-
-            //Set this client drafting status and turn on waiting screen
-            setHasAxiesDrafted(data.client2.hasAxiesDrafted);
-
-            //Checks if this use has to wait for the other one
-            if (data.client1.hasAxiesDrafted && data.client2.hasAxiesDrafted) {
-              setHasBothClientDrafted(true);
-            }
-          }
-        }
-      })
+    if(io_main.connected){
+      setConnectingState(true);
+      io_main.emit('joinBattle', params.battleId, getUserAddressToLocal());
     }else{
       await delay(2000);
-      setConnectingState(false)
+      setConnectingState(false);
     }
   }
+
+  io_main.on('connect', () => {
+    console.log("Connected: " + io_main.id);
+  })
+
+  io_main.on('error', async(err)=>{
+    await delay(2000);
+    console.log(`ERR : ${err}`)
+    setConnectingState(false)
+  })
+
+
+  io_main.on("permitJoin", (battleId, userId, status, msg) => {
+    console.log(io_main.id); // x8WIv7-mJelg7on_ALbx
+
+    if (userId == address && status == 1) {
+
+      //Migrate to different socket
+      //setSocket(io(`ws://${process.env.NEXT_PUBLIC_WS}/${params.battleId}`))
+      setBattleIdValidStatus(true);
+
+      //Reload Battle Info
+      console.log("Connection Permitted, requesting battle info");
+
+      //Close Main and prep for battle websocket
+      //io_main.close();
+    } else if (userId === address && status == 0) {
+      console.log('Failed to join battle: ', msg);
+      setErrMsg(msg);
+      setConnectingState(false);
+    } else if (userId === address && status == -1) {
+      console.log('Failed to join battle: ', msg);
+      setErrMsg(msg);
+      setConnectingState(false);
+    }
+  });
+
 
   function delay(milliseconds: number): any {
     return new Promise(resolve => setTimeout(resolve, milliseconds));
   }
 
-  function requestBattleInfo(){
-    if(socket.OPEN){
-        socket.send(JSON.stringify({
-            'battleId': params.battleId,
-            'intent': 'battleInfo',
-            'userId' : getUserAddressToLocal()
-        }));
-    }
-  }
-
   return (
-    <main className='flex min-h-screen flex-col justify-center items-center bg-gradient-radial from-blue-950 to-blue-900'>
+    <main className='flex h-screen flex-col justify-center items-center bg-gradient-radial from-blue-950 to-blue-900'>
       {
         (isBattleIdValidated)
           ?
-          <div className="w-full h-full flex flex-col justify-normal items-center">
-            <div className="hidden w-full h-fit flex flex-row justify-end items-center">
-              <div className="w-fit h-[40px] bg-blue-600 rounded-lg text-white overflow-x-hidden p-2 m-5">
-                <p className="min-w-[200px] max-w-[250px] text-ellipsis overflow-hidden">{clientAddress}</p>
-              </div>
-            </div>
-            <div className="w-full h-full xl:w-[1280px] mt-10">
-              <div className="flex flex-row justify-center items-center mb-5">
-                <div className="w-fit mr-5">
-                  <p>Battle Phase</p>
-                </div>
-                <div className="min-w-[200px] flex flex-row items-center">
-                  <Image src={"/icons/free.png"} height={40} width={40} alt={""} unoptimized={true} />
-                  <div className="flex flex-col justify-start ml-5">
-                    <p>Axie Drafting</p>
-                    <div className={`w-full mt-1 p-1  ${(progress == 0) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
-                  </div>
-                </div>
-                <div className="min-w-[200px] flex flex-row items-center">
-                  <Image src={"/icons/banned.png"} height={40} width={40} alt={""} unoptimized={true} />
-                  <div className="flex flex-col justify-start ml-5">
-                    <p>Banning Phase</p>
-                    <div className={`w-full mt-1  p-1  ${(progress == 1) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
-                  </div>
-                </div>
-              </div>
-              <div>
-                {
-                  (progress == 0 && !hasAxiesDrafted)
-                    ?
-                    <DraftingFragment params={{ socket: socket, battleId: params.battleId, address: clientAddress, client2_address: client2Address }} />
-                    :
-                    (progress == 0 && hasAxiesDrafted)
-                      ?
-                      <DraftingWaitingFragment />
-                      :
-                      (progress == 1 && hasBothClientDrafted)
-                      ?
-                      <BanningFragment params={{ socket: socket, battleId: params.battleId, address: clientAddress, client2_address: client2Address }} />
-                      :
-                      <span/>
-                }
-              </div>
-            </div>
-          </div>
-
+          <LobbyFragment params={{socket:io_main, battleId: params.battleId}} />
           :
           <div className="w-fit flex flex-col justify-normal items-center">
             <Image src={"/icons/Sword.png"} width={130} height={130} alt="" unoptimized={true} className="inline-block" />
