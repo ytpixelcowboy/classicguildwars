@@ -78,7 +78,7 @@ export default function PreBanningFragment({ params }: { params: { socket: Socke
                 <div className="w-full max-w-[500px] h-full flex flex-col justify-center items-center overflow-hidden">
                     <p className="w-full max-w-[500px] text-4xl font-black text-yellow-50 text-center text-ellipsis overflow-hidden">{client1Name}</p>
                     <p className="text-xl text-slate-200">{"Your guild"}</p>
-                    <div className="flex flex-row justify-normal items-center bg-cyan-900 border-cyan-700 border-4 px-3 py-2 rounded-lg shadow-xl">
+                    <div className="flex flex-row justify-normal items-center bg-cyan-900 border-cyan-700 border-4 px-3 py-2 rounded-lg shadow-xl mt-5">
                         <Image src={(client1IsReady)?"/icons/checked.png" : "/icons/check_bg.png"} width={25} height={25} alt="" unoptimized={true} className="inline-block mr-2" />
                         <p className="text-sm text-white">{(client1IsReady) ? "Ready" : "Waiting"}</p>
                     </div>
@@ -86,13 +86,13 @@ export default function PreBanningFragment({ params }: { params: { socket: Socke
                 <div className="w-full max-w-[500px] h-full flex flex-col justify-center items-center overflow-hidden">
                     <p className="w-full max-w-[500px] text-4xl font-black text-yellow-50 text-center text-ellipsis overflow-hidden">{client2Name}</p>
                     <p className="text-xl text-slate-200 shadow-md">{"Enemy Guild"}</p>
-                    <div className="flex flex-row justify-normal items-center bg-cyan-900 border-cyan-700 border-4 px-3 py-2 rounded-lg shadow-xl">
+                    <div className="flex flex-row justify-normal items-center bg-cyan-900 border-cyan-700 border-4 px-3 py-2 rounded-lg shadow-xl mt-5">
                         <Image src={(client2IsReady)?"/icons/checked.png" : "/icons/check_bg.png"} width={25} height={25} alt="" unoptimized={true} className="inline-block mr-2" />
                         <p className="text-sm text-white">{(client2IsReady) ? "Ready" : "Waiting"}</p>
                     </div>
                 </div>
             </div>
-            <div className="flex flex-col justify-normal items-center">
+            <div className="flex flex-col justify-normal items-center mt-10">
                 {
                     (hasConfirmed)
                     ?

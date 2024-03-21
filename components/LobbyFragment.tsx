@@ -93,33 +93,33 @@ export default function LobbyFragment({ params }: { params: { socket: Socket, ba
 
     return (
         <div className="w-full min-h-screen flex flex-col justify-normal items-center">
-            <div className="w-full min-h-screen 2xl:w-[1536px] flex flex-col justify-normal items-center p-5">
+            <div className="w-full min-h-screen 2xl:w-[1536px] flex flex-col justify-normal items-center">
                 <div className="w-full h-fit flex flex-row justify-between items-center">
                     <div className="w-full">
                         <div className="w-fit h-[40px] bg-blue-600 rounded-lg text-white overflow-x-hidden p-2">
                             <p className="min-w-[200px] max-w-[250px] text-ellipsis overflow-hidden">{client2Address}</p>
                         </div>
                     </div>
-                    <div className="w-full flex flex-row justify-center items-center mb-5">
-                        <div className="flex flex-col justify-center items-center">
-                            <div className="w-fit mr-5">
+                    <div className="w-full flex flex-row justify-center items-center">
+                        <div className="flex flex-col justify-center items-center bg-item-bd border-x-fg-shadow border-b-fg-shadow border-t-bg border-2 p-3 rounded-b-lg">
+                            <div className="w-fit mr-5 hidden">
                                 <p>Battle Phase</p>
                             </div>
                             <div className="w-fit flex flex-row justify-center items-center">
-                            <div className="min-w-[200px] flex flex-row items-center">
-                                <Image src={"/icons/free.png"} height={40} width={40} alt={""} unoptimized={true} />
-                                <div className="flex flex-col justify-start ml-5">
-                                    <p>Axie Drafting</p>
-                                    <div className={`w-full mt-1 p-1  ${(progress == 0) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
+                                <div className="min-w-[200px] flex flex-row justify-center items-center">
+                                    <Image src={"/icons/free.png"} height={35} width={35} alt={""} unoptimized={true} />
+                                    <div className="flex flex-col justify-start ml-5">
+                                        <p className="text-sm text-white">Axie Drafting</p>
+                                        <div className={`w-full mt-1 p-1  ${(progress == 0) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="min-w-[200px] flex flex-row items-center">
-                                <Image src={"/icons/banned.png"} height={40} width={40} alt={""} unoptimized={true} />
-                                <div className="flex flex-col justify-start ml-5">
-                                    <p>Banning Phase</p>
-                                    <div className={`w-full mt-1  p-1  ${(progress == 1) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
+                                <div className="min-w-[200px] flex flex-row justify-center items-center">
+                                    <Image src={"/icons/banned.png"} height={35} width={35} alt={""} unoptimized={true} />
+                                    <div className="flex flex-col justify-start ml-5">
+                                        <p className="text-sm text-white">Banning Phase</p>
+                                        <div className={`w-full mt-1  p-1  ${(progress == 1) ? 'bg-yellow-500' : 'bg-yellow-100'} rounded-2xl`} />
+                                    </div>
                                 </div>
-                            </div>
                             </div>
                         </div>
                     </div>
@@ -129,7 +129,7 @@ export default function LobbyFragment({ params }: { params: { socket: Socket, ba
                     </div>
                 </div>
 
-                <div className="w-full min-h-screen mt-10">
+                <div className="w-full min-h-screen mt-5 p-5">
                     {
                         (progress == 0 && !hasAxiesDrafted)
                             ?
