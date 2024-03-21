@@ -43,8 +43,8 @@ interface ClientInfo {
 }
 
 export default function DraftinFragment({ params }: { params: {socket: Socket, battleId: string, address: string, client2_address : string } }) {
-    //const [clientAxies, setClientAxies] = useState<string[]>(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"]);
-    const [clientAxies, setClientAxies] = useState<string[]>(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    const [clientAxies, setClientAxies] = useState<string[]>(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"]);
+    //const [clientAxies, setClientAxies] = useState<string[]>(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
     const [isSubmitDraft, setIsSubmitDraft] = useState<boolean>(false);
 
     function delay(milliseconds: number): any {
@@ -115,9 +115,8 @@ export default function DraftinFragment({ params }: { params: {socket: Socket, b
     }
 
     return (
-        <div className="w-full h-screen flex flex-col justify-normal ">
-            <div className="w-full h-full overflow-y-auto p-10">
-                <div className="flex flex-row justify-between">
+        <div className="w-full min-h-screen flex flex-col justify-normal items-center p-5">
+                <div className="w-full xl:w-[1280px] flex flex-row justify-between">
                     <div>
                         <p className="text-4xl font-bold mb-5">Axie Drafting</p>
                         <p className="text-xl text-gray-200">Add 13 axies that you want to draft pick.</p>
@@ -128,7 +127,7 @@ export default function DraftinFragment({ params }: { params: {socket: Socket, b
                     </div>
                 </div>
 
-                <div className="w-full h-fit flex flex-col justify-center items-center mt-5">
+                <div className="w-full min-h-screen flex flex-col justify-center items-center mt-5">
                     <div className="w-fit h-fit flex flex-wrap justify-center items-center">
                         {
                             clientAxies.map((e: string, index) => (
@@ -172,6 +171,5 @@ export default function DraftinFragment({ params }: { params: {socket: Socket, b
                     </div>
                 </div>
             </div>
-        </div>
     )
 }

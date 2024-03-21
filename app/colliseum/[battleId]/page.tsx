@@ -93,7 +93,7 @@ export default function InvitationPage({ params }: { params: { battleId: string 
   }
 
   return (
-    <main className='flex h-screen flex-col justify-center items-center bg-gradient-radial from-blue-950 to-blue-900'>
+    <main className='w-full min-h-screen overflow-x-hidden flex flex-col justify-center items-center bg-gradient-radial from-blue-950 to-blue-900'>
       {
         (isBattleIdValidated)
           ?
