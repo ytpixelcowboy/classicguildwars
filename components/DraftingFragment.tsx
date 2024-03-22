@@ -131,13 +131,13 @@ export default function DraftinFragment({ params }: { params: {socket: Socket, b
                     <div className="w-fit h-fit flex flex-wrap justify-center items-center">
                         {
                             clientAxies.map((e: string, index) => (
-                                <div key={index} className="w-fit flex flex-col justify-center items-center m-3 bg-fg-item p-5 border-fg-shadow border-4 rounded-xl shadow-xl">
-                                    <div className="w-full h-[150px] bg-sm-bg rounded-lg p-2 flex flex-col justify-center items-center">
-                                        <Image src={(e) ? `https://assets.axieinfinity.com/axies/${e}/axie/axie-full-transparent.png` : "/icons/unknown_axie.png"} width={150} height={150} alt="" unoptimized={true} className="inline-block" />
+                                <div key={index} className="w-[200px] flex flex-col justify-center items-center m-3 bg-fg-item p-3 border-fg-shadow border-4 rounded-xl shadow-xl">
+                                    <div className="w-[130px] h-[130px] bg-sm-bg rounded-lg p-2 flex flex-col justify-center items-center relative">
+                                        <Image src={(e) ? `https://assets.axieinfinity.com/axies/${e}/axie/axie-full-transparent.png` : "/icons/unknown_axie.png"} width={200} height={200} alt="" unoptimized={true} className="inline-block scale-[1.5] object-fill absolute" />
                                     </div>
-                                    <div className="w-fit flex flex-row justify-normal items-center">
-                                        <p className="text-white font-semibold mr-2">ID #</p>
-                                        <input className="w-[100px] font-sans bg-sm-bg-light text-orange-950 p-3 border-solid border-slate-400 rounded-md mt-2" type="number" placeholder="8278299" inputMode={"numeric"} onChange={async (event) => {
+                                    <div className="w-full flex flex-row justify-normal items-center">
+                                        <p className="w-fit text-white font-semibold mr-2">#</p>
+                                        <input className="w-full flex-1 font-sans bg-sm-bg-light text-orange-950 p-3 border-solid border-slate-400 rounded-md mt-2" type="number" placeholder="8278299" inputMode={"numeric"} onChange={async (event) => {
                                             await delay(1000);
 
                                             const input = event.target.value;

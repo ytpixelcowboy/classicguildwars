@@ -72,6 +72,8 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
 
 
     useEffect(()=>{
+        params.socket.emit('banningPhase', params.battleId, params.address);
+
         fetchProfileName(params.address).then(setClient1Name);
         fetchProfileName(params.client2_address).then(setClient2Name);
     },[params])
@@ -96,7 +98,7 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
         <div className="w-full min-h-screen flex flex-row justify-between p-10">
             <div className="w-full max-w-[800px] h-[650px] flex flex-col justify-center items-center mr-5">
                 <div className="max-w-[600px] flex flex-col justify-normal items-center">
-                <p className="text-5xl font-black text-yellow-50 shadow-md text-ellipsis overflow-hidden">{client1Name}</p>
+                <p className="text-4xl font-black text-yellow-50 shadow-md text-ellipsis overflow-hidden line-clamp-2">{client1Name}</p>
                 <p className="text-xl text-slate-200 shadow-md">{"Guild 1"}</p>
                 </div>
                 <div className="w-full h-full bg-fg-shadow mt-5 p-5 rounded-lg shadow-lg  flex flex-col justify-center items-start ">
@@ -125,7 +127,7 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
             </div>
             <div className="w-full max-w-[800px] h-[650px] flex flex-col justify-center items-center ml-5">
             <div className="max-w-[600px] flex flex-col justify-normal items-center">
-                <p className="text-5xl font-black text-yellow-50 shadow-md text-ellipsis overflow-hidden">{client2Name}</p>
+                <p className="text-4xl font-black text-yellow-50 shadow-md text-ellipsis overflow-hidden line-clamp-2">{client2Name}</p>
                 <p className="text-xl text-slate-200 shadow-md">{"Guild 1"}</p>
                 </div>
                 <div className="w-full h-full bg-fg-shadow mt-5 p-5 rounded-lg shadow-lg  flex flex-col justify-center items-start ">
