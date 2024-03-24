@@ -26,17 +26,19 @@ export default function InvitationPage({ params }: { params: { battleId: string 
   const router = useRouter();
 
   //Connectivity Controller
+  var [signedAddress, setSignedAddress] = useState<string>("");
   var [isBattleIdValidated, setBattleIdValidStatus] = useState<boolean>();
 
   var [errMsg, setErrMsg] = useState<string>();
   var [isConnecting, setConnectingState] = useState<boolean>(false);
-  var [address, setAddress] = useState<string | any>();
 
   function func_connectWallet() {
     console.log("Is wallet connected: " + checkIfConnected())
 
-    connectRoninWallet().then(() => {
-      setAddress(getUserAddressToLocal())
+    connectRoninWallet().then((walletAddress)=>{
+      if(walletAddress){
+        setSignedAddress(walletAddress);
+      }
     });
   }
 
@@ -48,10 +50,15 @@ export default function InvitationPage({ params }: { params: { battleId: string 
     }else{
       await delay(2000);
       setConnectingState(false);
+      setErrMsg("websocket is diconnected");
     }
   }
 
-  io_main.on('connect', () => {
+  io_main.on('connected', () => {
+    console.log("Connected: " + io_main.id);
+  })
+
+  io_main.on('disconnect', () => {
     console.log("Connected: " + io_main.id);
   })
 
@@ -65,7 +72,7 @@ export default function InvitationPage({ params }: { params: { battleId: string 
   io_main.on("permitJoin", (battleId, userId, status, msg) => {
     console.log(io_main.id); // x8WIv7-mJelg7on_ALbx
 
-    if (userId == address && status == 1) {
+    if (userId == signedAddress && status == 1) {
 
       //Migrate to different socket
       //setSocket(io(`ws://${process.env.NEXT_PUBLIC_WS}/${params.battleId}`))
@@ -76,11 +83,11 @@ export default function InvitationPage({ params }: { params: { battleId: string 
 
       //Close Main and prep for battle websocket
       //io_main.close();
-    } else if (userId === address && status == 0) {
+    } else if (userId === signedAddress && status == 0) {
       console.log('Failed to join battle: ', msg);
       setErrMsg(msg);
       setConnectingState(false);
-    } else if (userId === address && status == -1) {
+    } else if (userId === signedAddress && status == -1) {
       console.log('Failed to join battle: ', msg);
       setErrMsg(msg);
       setConnectingState(false);
@@ -97,7 +104,7 @@ export default function InvitationPage({ params }: { params: { battleId: string 
       {
         (isBattleIdValidated)
           ?
-          <LobbyFragment params={{socket:io_main, battleId: params.battleId}} />
+          <LobbyFragment params={{socket:io_main, address: signedAddress, battleId: params.battleId}} />
           :
           <div className="w-fit flex flex-col justify-normal items-center">
             <Image src={"/icons/Sword.png"} width={130} height={130} alt="" unoptimized={true} className="inline-block" />
@@ -113,9 +120,9 @@ export default function InvitationPage({ params }: { params: { battleId: string 
 
             <div className="w-fit mt-10">
               {
-                (address != null)
+                (signedAddress)
                   ?
-                  <button className="h-[50px] w-[200px] pl-6 pr-6 pt-2 pb-2 bg-fg text-white rounded-item-bd drop-shadow-lg disabled:bg-gray-600 disabled:text-gray-400 border-bg border-4 rounded-lg" onClick={connectToWebsocket} disabled={isConnecting}>{"Join lobby"}</button>
+                  <button className="h-[50px] w-[200px] pl-6 pr-6 pt-2 pb-2 bg-fg text-white rounded-item-bd drop-shadow-lg hover:bg-yellow-500 disabled:bg-gray-600 disabled:text-gray-400 border-bg border-4 rounded-lg" onClick={connectToWebsocket} disabled={isConnecting}>{"Join lobby"}</button>
                   :
                   <button className="h-[50px] w-fit pl-6 pr-6 pt-2 pb-2 bg-blue-600 text-white rounded-item-bd drop-shadow-lg disabled:bg-gray-600 disabled:text-gray-400 rounded-lg flex flex-row justify-normal items-center" onClick={func_connectWallet}>{"Connect Ronin Wallet"}</button>
               }

@@ -30,7 +30,7 @@ interface ClientInfo {
 }
 //const socket = io(`ws://${process.env.NEXT_PUBLIC_WS}`);
 
-export default function LobbyFragment({ params }: { params: { socket: Socket, battleId: string } }) {
+export default function LobbyFragment({ params }: { params: { socket: Socket, address : string, battleId: string } }) {
     const router = useRouter();
 
     var [progress, setProgress] = useState<number>(0);
@@ -41,46 +41,60 @@ export default function LobbyFragment({ params }: { params: { socket: Socket, ba
     const [hasAxiesDrafted, setHasAxiesDrafted] = useState<boolean>(false);
     const [hasBothClientDrafted, setHasBothClientDrafted] = useState<boolean>();
 
-    params.socket.on('resultBattleInfo', (battleId, status, data: BattleInfo) => {
-        setProgress(data.phase);
-
-        //Check if this client is client1 in the server
-        if (data.client1.address == clientAddress) {
-            setClient_address(data.client1.address);
-            setClient2_address(data.client2.address);
-
-            //Set this client drafting status and turn on waiting screen
-            setHasAxiesDrafted(data.client1.hasAxiesDrafted);
-
-            //Checks if this use has to wait for the other one
-            if (data.client1.hasAxiesDrafted && data.client2.hasAxiesDrafted) {
-                setHasBothClientDrafted(true);
-            }
-        }
-
-        //Check if this client is client2 in the server
-        if (data.client2.address == clientAddress) {
-            setClient_address(data.client2.address);
-            setClient2_address(data.client1.address);
-
-            //Set this client drafting status and turn on waiting screen
-            setHasAxiesDrafted(data.client2.hasAxiesDrafted);
-
-            //Checks if this use has to wait for the other one
-            if (data.client1.hasAxiesDrafted && data.client2.hasAxiesDrafted) {
-                setHasBothClientDrafted(true);
-            }
-        }
-    })
-
-    params.socket.on('disconnected', () => {
-        router.refresh();
-    })
+    const [banningClient, setBanningClient] = useState<string>("");
+    const [banAxieCount,setBanAxieCount] = useState<number>(0);
+    const [banningTimeLimit, setBanningTimeLimit] = useState<number>(0);
 
     useEffect(() => {
+        params.socket.on('resultBattleInfo', (battleId, status, data: BattleInfo) => {
+            setProgress(data.phase);
+    
+            //Check if this client is client1 in the server
+            if (data.client1.address == clientAddress) {
+                setClient_address(data.client1.address);
+                setClient2_address(data.client2.address);
+    
+                //Set this client drafting status and turn on waiting screen
+                setHasAxiesDrafted(data.client1.hasAxiesDrafted);
+    
+                //Checks if this use has to wait for the other one
+                if (data.client1.hasAxiesDrafted && data.client2.hasAxiesDrafted) {
+                    setHasBothClientDrafted(true);
+                }
+            }
+    
+            //Check if this client is client2 in the server
+            if (data.client2.address == clientAddress) {
+                setClient_address(data.client2.address);
+                setClient2_address(data.client1.address);
+    
+                //Set this client drafting status and turn on waiting screen
+                setHasAxiesDrafted(data.client2.hasAxiesDrafted);
+    
+                //Checks if this use has to wait for the other one
+                if (data.client1.hasAxiesDrafted && data.client2.hasAxiesDrafted) {
+                    setHasBothClientDrafted(true);
+                }
+            }
+        })
+
+        params.socket.on('initiateBan', (banningClient : string, banCount : number, timelimit : number)=>{
+            setBanningClient(banningClient);
+            setBanAxieCount( banCount);
+            setBanningTimeLimit(timelimit);
+        })
+
+        params.socket.on('showResult', () => {
+            router.push(`/result/${params.battleId}`);
+        })
+    
+        params.socket.on('disconnect', () => {
+            router.push('/?notice=socketDisconnected');
+        })
+        
         console.log("Connected to battle lobby")
         requestBattleInfo();
-    }, [])
+    }, [params])
 
     function delay(milliseconds: number): any {
         return new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -97,7 +111,7 @@ export default function LobbyFragment({ params }: { params: { socket: Socket, ba
                 <div className="w-full h-fit flex flex-row justify-between items-center">
                     <div className="w-full">
                         <div className="w-fit h-[40px] bg-blue-600 rounded-lg text-white overflow-x-hidden p-2">
-                            <p className="min-w-[200px] max-w-[250px] text-ellipsis overflow-hidden">{client2Address}</p>
+                            <p className="min-w-[200px] max-w-[250px] text-ellipsis overflow-hidden">{clientAddress}</p>
                         </div>
                     </div>
                     <div className="w-full flex flex-row justify-center items-center">

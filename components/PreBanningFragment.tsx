@@ -42,6 +42,7 @@ export default function PreBanningFragment({ params }: { params: { socket: Socke
         fetchProfileName(params.client2_address).then(setClient2Name);
     },[params])
 
+
     params.socket.on('respondPendingHandshake', (reason, battleId, requester, status)=>{
         if(reason == "moveToWaiting" && status == 1){
             if(requester == params.address){

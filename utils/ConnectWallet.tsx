@@ -37,13 +37,13 @@ export async function connectRoninWallet() {
     const accounts = await sdk.requestAccounts();
     if (accounts) {
         setUserAddressToLocal(accounts[0]);
-        return getUserAddressToLocal();
+        return accounts[0];
     }
 }
 
 export function checkIfConnected() {
     //console.log(getUserAddressToLocal()?.toString);
-    const address = getUserAddressToLocal()?.toString;
+    const address = getUserAddressToLocal()?.toString();
 
     return address != undefined || address != null;
 }

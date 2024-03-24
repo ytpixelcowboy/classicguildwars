@@ -6,6 +6,8 @@ import Image from "next/image"
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import DefaultMediumModal from "@/modals/DefaultMediumModal";
+import CreateBattleRoom from "@/modals/CreateBattleRoom";
+import { io } from "socket.io-client";
 
 interface SocketResponse {
     intent: string,
@@ -40,6 +42,7 @@ interface BannedAxiesModel{
     axieId : string,
     isBanned : string,
 }
+const socket = io(`ws://${process.env.NEXT_PUBLIC_WS}`);
 
 export default function AdminDashboard(){
     const router = useRouter();
@@ -59,17 +62,20 @@ export default function AdminDashboard(){
     const open_createBattle = ()=>ref_createBattle.current?.showModal();
     const close_createBattle = ()=>ref_createBattle.current?.close();
 
+    useEffect(()=>{
+        socket.on('connected', ()=>{
+            console.log("Admin dashboard connected")
+        })
+    },[])
+
     return (
         <main className="h-screen flex flex-row justify-normal bg-gradient-radial from-bg-sub to-fg-shadow">
-            <DefaultMediumModal ref={ref_createBattle} header={"Create Battle"} onClose={close_createBattle}>
-                <div className="p-5 bg-fg">
-                <p className="text-base font-bold text-white ">Guild 1 address: </p>
-                    <input className="w-full font-sans bg-sm-bg-light text-black p-3 border-solid border-item-bd border-2 rounded-lg mr-2" type="text" min={1} onChange={(event) => {
-                        
-                    }} ></input>
-                <p className="text-base font-bold text-white ">Guild 2 address: </p>
-                </div>
-            </DefaultMediumModal>
+            <CreateBattleRoom ref={ref_createBattle} onClose={close_createBattle} callback={(client1Address, client2Address) => {
+                socket.emit('createBattle', "0x3277d86718041a38c1605dd6d13039edb1722e6e", client1Address, client2Address, (callback: string) => {
+                    console.log("Room has been created");
+                    close_createBattle();
+                })
+            }} />
 
             <div className="w-[400px] h-screen bg-fg-item p-5 flex flex-col rounded-md justify-between shadow-2xl">
                 <div className="flex flex-row justify-normal items-center">
