@@ -106,7 +106,7 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
             //Trigger confirm ban dialog
             open_banPick();
         }else{
-            close_banPick();
+            //close_banPick();
         }
     },[selectedBannedAxies])
 
@@ -136,7 +136,10 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
 
     const ref_banPick = useRef<HTMLDialogElement>(null);
     const open_banPick = ()=>ref_banPick.current?.showModal();
-    const close_banPick = ()=> ref_banPick.current?.close();
+    function close_banPick(){
+        setSelectedBannedAxies([]);
+        ref_banPick.current?.close();
+    }
 
     function requestBattleInfo(){
         console.log("Battle Request submitted: banning")
@@ -152,15 +155,13 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
                 :
                 <TurnAnnouncer params={{header: "Its your enemy's turn"}} />
             }
-            <DefaultMediumModal ref={ref_banPick} onClose={close_banPick} header={"Confirm Axie(s) to ban"}>
+            <DefaultMediumModal ref={ref_banPick} header={"Confirm Axie(s) to ban"}>
                 <div className="w-full h-fit bg-fg p-5 flex flex-wrap justify-center items-center">
                     <p className="text-sm text-white font-semibold">{`Click an axie to remove from draft ban`}</p>
                     <div className="w-full h-full flex flex-wrap justify-center items-center p-5 mt-5 overflow-y-auto bg-fg-shadow rounded-lg">
                         {
                             selectedBannedAxies.map((e, index) => (
                                 <button key={index} className="w-[140px] h-[140px] flex flex-col justify-center items-center m-1 bg-fg-item p-2 border-fg border-4 rounded-xl shadow-xl" onClick={() => {
-
-                                    //Remove deleted axies from array of draft to ban
                                     setSelectedBannedAxies((prev) => [...prev.splice(prev.indexOf(e))]);
                                 }}>
                                     <div className="w-[80px] h-[80px] bg-sm-bg rounded-lg p-2 flex flex-col justify-center items-center relative overflow-hidden">
@@ -174,9 +175,9 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
                         }
                     </div>
                     <button className="h-[50px] w-[200px] mt-5 pl-6 pr-6 pt-2 pb-2 bg-fg text-white rounded-item-bd drop-shadow-lg hover:bg-yellow-500 disabled:bg-gray-600 disabled:text-gray-400 border-bg border-4 rounded-lg" onClick={()=>{
-                        setSelectedBannedAxies([]);
                         submitBanPick(selectedBannedAxies);
                     }} disabled={selectedBannedAxies.length != banAxieCount}>{"Confirm"}</button>
+                    <button className="h-[50px] w-[200px] mt-5 pl-6 pr-6 pt-2 pb-2 bg-fg text-white rounded-item-bd drop-shadow-lg hover:bg-yellow-500 border-bg border-4 rounded-lg" onClick={()=>close_banPick()}>{"Discard"}</button>
                 </div>
             </DefaultMediumModal>
             <div className="w-full max-w-[800px] h-[650px] flex flex-col justify-center items-center mr-5">
