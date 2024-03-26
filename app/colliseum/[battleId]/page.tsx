@@ -75,7 +75,6 @@ export default function InvitationPage({ params }: { params: { battleId: string 
     if (userId == signedAddress && status == 1) {
 
       //Migrate to different socket
-      //setSocket(io(`ws://${process.env.NEXT_PUBLIC_WS}/${params.battleId}`))
       setBattleIdValidStatus(true);
 
       //Reload Battle Info
@@ -93,6 +92,16 @@ export default function InvitationPage({ params }: { params: { battleId: string 
       setConnectingState(false);
     }
   });
+
+  useEffect(()=>{
+    io_main.on('showResult', () => {
+      router.push(`/result/${params.battleId}`);
+    })
+
+    io_main.on('disconnect', () => {
+      router.push('/?notice=socketDisconnected');
+    })
+  },[])
 
 
   function delay(milliseconds: number): any {

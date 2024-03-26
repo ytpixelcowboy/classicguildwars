@@ -45,6 +45,8 @@ export default function LobbyFragment({ params }: { params: { socket: Socket, ad
     const [banAxieCount,setBanAxieCount] = useState<number>(0);
     const [banningTimeLimit, setBanningTimeLimit] = useState<number>(0);
 
+    const [timeLeft, setTimeLeft] = useState<number>(0);
+
     useEffect(() => {
         params.socket.on('resultBattleInfo', (battleId, status, data: BattleInfo) => {
             setProgress(data.phase);
@@ -80,21 +82,30 @@ export default function LobbyFragment({ params }: { params: { socket: Socket, ad
 
         params.socket.on('initiateBan', (banningClient : string, banCount : number, timelimit : number)=>{
             setBanningClient(banningClient);
-            setBanAxieCount( banCount);
+            setBanAxieCount(banCount);
             setBanningTimeLimit(timelimit);
         })
 
-        params.socket.on('showResult', () => {
-            router.push(`/result/${params.battleId}`);
-        })
-    
-        params.socket.on('disconnect', () => {
-            router.push('/?notice=socketDisconnected');
-        })
         
-        console.log("Connected to battle lobby")
         requestBattleInfo();
-    }, [params])
+    }, [])
+
+
+    useEffect(()=>{
+        if(progress == 2){
+            setTimeLeft(banningTimeLimit);
+
+            const intervalId = setInterval(() => {
+                setTimeLeft((prev) => prev - 1);
+
+                if (timeLeft < 0) {
+                    clearInterval(intervalId);
+                    console.log('Countdown finished!');
+                }
+            }, 1000);
+        }
+        
+    },[banningTimeLimit])
 
     function delay(milliseconds: number): any {
         return new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -108,10 +119,11 @@ export default function LobbyFragment({ params }: { params: { socket: Socket, ad
     return (
         <div className="w-full min-h-screen flex flex-col justify-normal items-center">
             <div className="w-full min-h-screen 2xl:w-[1536px] flex flex-col justify-normal items-center">
-                <div className="w-full h-fit flex flex-row justify-between items-center">
+                <div className="w-full h-[60px] flex flex-row justify-between items-center">
                     <div className="w-full">
-                        <div className="w-fit h-[40px] bg-blue-600 rounded-lg text-white overflow-x-hidden p-2">
-                            <p className="min-w-[200px] max-w-[250px] text-ellipsis overflow-hidden">{clientAddress}</p>
+                        <div className="w-fit h-[40px] flex flex-row justify-normal items-center bg-blue-600 rounded-lg text-white overflow-x-hidden p-2  ml-5">
+                            <Image src={"/icons/ic_blockchain.png"} className="mr-2" height={15} width={15} alt={""} unoptimized={true} />
+                            <p className="min-w-[200px] max-w-[250px] text-sm text-ellipsis overflow-hidden">{clientAddress}</p>
                         </div>
                     </div>
                     <div className="w-full flex flex-row justify-center items-center">
@@ -137,9 +149,14 @@ export default function LobbyFragment({ params }: { params: { socket: Socket, ad
                             </div>
                         </div>
                     </div>
-                    <div className="w-full">
-
-
+                    <div className="w-full flex flex-row justify-start items-center p-2">
+                        <div className={`w-fit flex flex-col justify-normal items-start bg-item-bd  border-x-fg-shadow border-b-fg-shadow border-t-bg border-2 rounded-md px-5 py-2 ${(progress == 2) ? 'visible' : 'hidden'}`}>
+                            <p className="text-sm text-white">Turn Timer</p>
+                            <div className="flex flex-row justify-center items-center">
+                                <Image src={"/icons/icon-time.png"} className="mr-2" height={15} width={15} alt={""} unoptimized={true} />
+                                <p className="text-base text-white">{`${timeLeft} s`}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -153,7 +170,7 @@ export default function LobbyFragment({ params }: { params: { socket: Socket, ad
                                 ?
                                 <DraftingWaitingFragment />
                                 :
-                                (progress == 2 && hasBothClientDrafted)
+                                (progress == 1 && hasBothClientDrafted)
                                 ?
                                 <PreBanningFragment params={{ socket: params.socket, battleId: params.battleId, address: clientAddress, client2_address: client2Address }}/>
                                 :

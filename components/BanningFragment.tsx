@@ -7,6 +7,7 @@ import Image from "next/image";
 import fetchProfileName from "@/scripts/getProfileName";
 import TurnAnnouncer from "./TurnAnnouncer";
 import DefaultMediumModal from "@/modals/DefaultMediumModal";
+import ConfirmBanAxies from "@/modals/ConfirmBanAxies";
 
 interface BattleInfo {
     battleId: string,
@@ -60,7 +61,9 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
         params.socket.emit('banningPhase', params.battleId, params.address);
 
         requestBattleInfo();
+    },[])
 
+    useEffect(()=>{
         //const socket = params.currentSocket;
         params.socket.on('resultBattleInfo', (battleId : string, status : number, data : BattleInfo)=>{
             if (battleId == params.battleId && status == 1) {
@@ -93,20 +96,41 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
 
         //Listen to force reload of ban info
         //helps when a user is currently connected to the game to trigger handshake request without needing to click anything in other side
+
         params.socket.on('forceRespondHandshake',(targetClient)=>{
             if(targetClient == params.address){
                 console.log("Client Responded to force handshake")
                 requestIncrementTurnHandshake();
             }
         })
+
+        params.socket.once('resultBanPick', (status)=>{
+            delay(1000)
+            if(status == 1){
+                func_closeBanPickDialog();
+
+                //Trigger and forces the other player to do 'submitHandshakeRequest' emit
+                //params.socket.emit('broadcastNotif', params.battleId, 'forceOnWait_incrementTurnHandshake', params.client2_address); 
+
+                //Waiting for other player to accept the handshake and increment the turn
+                requestIncrementTurnHandshake();
+
+                requestBattleInfo();
+                console.log("Ban picked success");
+            }
+        })
     },[])
+
+    function delay(milliseconds: number): any {
+        return new Promise(resolve => setTimeout(resolve, milliseconds));
+      }
 
     useEffect(()=>{
         if(params.address == banningClient && banAxieCount == selectedBannedAxies.length){
             //Trigger confirm ban dialog
             open_banPick();
         }else{
-            //close_banPick();
+            func_closeBanPickDialog();
         }
     },[selectedBannedAxies])
 
@@ -118,32 +142,28 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
         setBanAxieCount((prev) => prev - 1);
         console.log(`User ${params.address} submitted ban pick of axie id ${axieIds}.`);
 
-        params.socket.emit('banPick', params.battleId, params.address, axieIds, (callback : number)=>{
-            if(callback == 1){
-                close_banPick();
-
-                //Trigger and forces the other player to do 'submitHandshakeRequest' emit
-                params.socket.emit('broadcastNotif', params.battleId, 'forceOnWait_incrementTurnHandshake', params.client2_address); 
-
-                //Waiting for other player to accept the handshake and increment the turn
-                requestIncrementTurnHandshake();
-
-                requestBattleInfo();
-                console.log("Ban picked success");
-            }
-        });
+        params.socket.emit('banPick', params.battleId, params.address, axieIds);
     }
 
     const ref_banPick = useRef<HTMLDialogElement>(null);
-    const open_banPick = ()=>ref_banPick.current?.showModal();
-    function close_banPick(){
-        setSelectedBannedAxies([]);
-        ref_banPick.current?.close();
+    const open_banPick = ()=> ref_banPick.current?.showModal();
+    const close_banPick = ()=> ref_banPick.current?.close();
+
+    function func_closeBanPickDialog(){
+        close_banPick();
+        if(selectedBannedAxies.length > 0){
+            setSelectedBannedAxies([]);
+        }
     }
 
     function requestBattleInfo(){
         console.log("Battle Request submitted: banning")
         params.socket.emit('battleInfo', params.battleId, params.address);
+    }
+
+    function isAxieBanned(list : string[], axieId : string){
+        const res = list.some((obj) => obj == axieId);
+        return res;
     }
 
     return (
@@ -155,7 +175,7 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
                 :
                 <TurnAnnouncer params={{header: "Its your enemy's turn"}} />
             }
-            <DefaultMediumModal ref={ref_banPick} header={"Confirm Axie(s) to ban"}>
+            <ConfirmBanAxies ref={ref_banPick} header={"Confirm Axie(s) to ban"}>
                 <div className="w-full h-fit bg-fg p-5 flex flex-wrap justify-center items-center">
                     <p className="text-sm text-white font-semibold">{`Click an axie to remove from draft ban`}</p>
                     <div className="w-full h-full flex flex-wrap justify-center items-center p-5 mt-5 overflow-y-auto bg-fg-shadow rounded-lg">
@@ -177,9 +197,9 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
                     <button className="h-[50px] w-[200px] mt-5 pl-6 pr-6 pt-2 pb-2 bg-fg text-white rounded-item-bd drop-shadow-lg hover:bg-yellow-500 disabled:bg-gray-600 disabled:text-gray-400 border-bg border-4 rounded-lg" onClick={()=>{
                         submitBanPick(selectedBannedAxies);
                     }} disabled={selectedBannedAxies.length != banAxieCount}>{"Confirm"}</button>
-                    <button className="h-[50px] w-[200px] mt-5 pl-6 pr-6 pt-2 pb-2 bg-fg text-white rounded-item-bd drop-shadow-lg hover:bg-yellow-500 border-bg border-4 rounded-lg" onClick={()=>close_banPick()}>{"Discard"}</button>
+                    <button className="h-[50px] w-[200px] mt-5 pl-6 pr-6 pt-2 pb-2 bg-fg text-white rounded-item-bd drop-shadow-lg hover:bg-yellow-500 border-bg border-4 rounded-lg" onClick={()=>func_closeBanPickDialog()}>{"Discard"}</button>
                 </div>
-            </DefaultMediumModal>
+            </ConfirmBanAxies>
             <div className="w-full max-w-[800px] h-[650px] flex flex-col justify-center items-center mr-5">
                 <div className="max-w-[600px] flex flex-col justify-normal items-center">
                 <p className="text-4xl font-black text-yellow-50 shadow-md text-ellipsis overflow-hidden line-clamp-2">{client1Name}</p>
@@ -189,9 +209,9 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
                     <div className="w-fit h-full flex flex-wrap justify-center items-center overflow-y-auto ">
                         {
                             client1Axies.map((e, index) => (
-                                <div key={index} className={`w-[140px] h-[140px] m-1 p-2 border-4 rounded-xl shadow-xl  ${(client1BannedAxies.some((obj) => obj == e)) ? "bg-slate-800 border-red-700" : "bg-fg-item border-fg"}`}>
+                                <div key={index} className={`w-[140px] h-[140px] m-1 p-2 border-4 rounded-xl shadow-xl  ${(isAxieBanned(client1BannedAxies, e)) ? "bg-slate-800 border-red-700" : "bg-fg-item border-fg"}`}>
                                     <div className="flex flex-col justify-center items-center relative">
-                                        <div className={`w-full h-full flex flex-col justify-center items-center absolute ${(client1BannedAxies.some((obj) => obj == e)) ? "block" : "hidden"} z-10`} >
+                                        <div className={`w-full h-full flex flex-col justify-center items-center absolute ${(isAxieBanned(client1BannedAxies, e)) ? "block" : "hidden"} z-10`} >
                                             <Image src={`/icons/banned.png`} width={80} height={80} alt="" unoptimized={true} className={`inline-block`} />
                                         </div>
                                         <div className="w-full h-full flex flex-col justify-center items-center ">
@@ -224,9 +244,9 @@ export default function BanningFragment({ params }: { params: { socket: Socket, 
                                     setSelectedBannedAxies((prev)=> [...prev, e]);
                                     }}
                                     
-                                    disabled={(client2BannedAxies.some((obj) => obj == e))|| (selectedBannedAxies.some((obj) => obj == e)) || (params.address != banningClient) || (params.address == banningClient && banAxieCount == selectedBannedAxies.length)}>
+                                    disabled={isAxieBanned(client2BannedAxies, e)|| isAxieBanned(selectedBannedAxies, e) || (params.address != banningClient) || (params.address == banningClient && banAxieCount == selectedBannedAxies.length)}>
                                     <div className="flex flex-col justify-center items-center relative">
-                                        <div className={`w-full h-full flex flex-col justify-center items-center absolute ${(client2BannedAxies.some((obj) => obj == e)) ? "block" : "hidden"} z-10`} >
+                                        <div className={`w-full h-full flex flex-col justify-center items-center absolute ${isAxieBanned(client2BannedAxies, e) ? "block" : "hidden"} z-10`} >
                                             <Image src={`/icons/banned.png`} width={80} height={80} alt="" unoptimized={true} className={`inline-block`} />
                                         </div>
                                         <div className="w-full h-full flex flex-col justify-center items-center ">

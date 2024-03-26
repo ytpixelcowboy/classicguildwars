@@ -69,24 +69,21 @@ export default function AdminDashboard(){
     },[])
 
     return (
-        <main className="h-screen flex flex-row justify-normal bg-gradient-radial from-bg-sub to-fg-shadow">
+        <main className="min-h-screen flex flex-col justify-normal bg-gradient-radial from-bg-sub to-fg-shadow relative">
             <CreateBattleRoom ref={ref_createBattle} onClose={close_createBattle} callback={(client1Address, client2Address) => {
                 socket.emit('createBattle', "0x3277d86718041a38c1605dd6d13039edb1722e6e", client1Address, client2Address, (callback: string) => {
                     console.log("Room has been created");
                     close_createBattle();
                 })
             }} />
-
-            <div className="w-[400px] h-screen bg-fg-item p-5 flex flex-col rounded-md justify-between shadow-2xl">
+            <header className="w-full h-[60px] bg-fg-item p-5 flex flex-row rounded-md justify-between z-10 fixed ">
                 <div className="flex flex-row justify-normal items-center">
-                    <Image src={"/icons/icon_guild.png"} height={50} width={50} alt={""} unoptimized={true} />
-                    <p className="text-2xl font-bold text-white ml-5">Guild Wars</p>
+                    <Image src={"/icons/icon_guild.png"} height={30} width={30} alt={""} unoptimized={true} />
+                    <p className="text-lg font-bold text-white ml-5">Guild Wars</p>
                 </div>
-                <div className="flex flex-row justify-center items-center">
-                    
-                </div>
-            </div>
-            <div className="w-full min-h-screen flex flex-row justify-between p-2 overflow-y-scroll">
+            </header>
+
+            <div className="w-full min-h-screen flex flex-row justify-between p-2 mt-[60px]">
                 <div className="w-full h-fit flex flex-col justify-between items-start p-5">
                     <div className="w-full h-fit flex-1 flex-row p-5">
                         <div className="w-full flex flex-row justify-between items-center">
@@ -97,11 +94,11 @@ export default function AdminDashboard(){
                             <button className="h-[50px] w-fit pl-6 pr-6 pt-2 pb-2 bg-fg text-white rounded-item-bd drop-shadow-lg disabled:bg-gray-600 disabled:text-gray-400 border-bg border-4 rounded-lg" 
                             onClick={open_createBattle}>{"Create room"}</button>
                         </div>
-                        <div className="w-full h-[400px] flex flex-col p-5 mr-3 mt-2 bg-fg border-4 border-item-bd rounded-lg shadow-lg">
+                        <div className="w-full h-[400px] flex flex-col p-5 mr-3 mt-2 bg-fg border-2 border-item-bd rounded-lg shadow-lg">
                             <div className="w-full h-fit overflow-y-auto">
                                 {
                                     liveBattles?.map((e) => (
-                                        <div key={e.battleId} className="w-full h-fit flex flex-row justify-between items-center bg-fg rounded-lg border-4 border-fg-item p-3 mb-1 shadow-md">
+                                        <div key={e.battleId} className="w-full h-fit flex flex-row justify-between items-center bg-fg rounded-lg border-4 border-fg-item p-3 mb-1 shadow-sm">
                                             <div className="flex flex-col">
                                                 <div className="flex flex-row justify-normal items-center">
                                                     <p className="text-xs font-bold text-white">{"BattleID: #"}</p>
@@ -142,7 +139,7 @@ export default function AdminDashboard(){
                             <Image src={"/icons/icon_history.png"} height={35} width={35} alt={""} unoptimized={true} className="mr-2"/>
                             <p className="text-xl font-bold text-white">Previous logs</p>
                         </div>
-                        <div className="w-full h-[500px] flex flex-row p-5 mr-3 mt-2 bg-fg border-4 border-item-bd rounded-lg shadow-lg">
+                        <div className="w-full h-[500px] flex flex-row p-5 mr-3 mt-2 bg-fg border-2 border-item-bd rounded-lg shadow-sm">
 
                         </div>
                     </div>
@@ -152,7 +149,7 @@ export default function AdminDashboard(){
                         <Image src={"/icons/setting.png"} height={35} width={35} alt={""} unoptimized={true} className="mr-2" />
                         <p className="text-xl font-bold text-white">Participants</p>
                     </div>
-                    <div className="w-full h-full flex flex-row p-5 mr-3 mt-2 bg-fg border-4 border-item-bd rounded-lg shadow-lg">
+                    <div className="w-full h-full flex flex-row p-5 mr-3 mt-2 bg-fg border-2 border-item-bd rounded-lg shadow-lg">
 
                     </div>
                 </div>
