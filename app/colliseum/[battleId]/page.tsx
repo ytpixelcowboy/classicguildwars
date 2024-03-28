@@ -27,7 +27,7 @@ export default function InvitationPage({ params }: { params: { battleId: string 
 
   //Connectivity Controller
   var [signedAddress, setSignedAddress] = useState<string>("");
-  var [isBattleIdValidated, setBattleIdValidStatus] = useState<boolean>();
+  var [isBattleIdValidated, setBattleIdValidStatus] = useState<boolean>(false);
 
   var [errMsg, setErrMsg] = useState<string>();
   var [isConnecting, setConnectingState] = useState<boolean>(false);
@@ -44,10 +44,10 @@ export default function InvitationPage({ params }: { params: { battleId: string 
 
   async function connectToWebsocket() {
 
-    if(io_main.connected){
+    if (io_main.connected) {
       setConnectingState(true);
       io_main.emit('joinBattle', params.battleId, getUserAddressToLocal());
-    }else{
+    } else {
       await delay(2000);
       setConnectingState(false);
       setErrMsg("websocket is diconnected");
@@ -62,7 +62,7 @@ export default function InvitationPage({ params }: { params: { battleId: string 
     console.log("Connected: " + io_main.id);
   })
 
-  io_main.on('error', async(err)=>{
+  io_main.on('error', async (err) => {
     await delay(2000);
     console.log(`ERR : ${err}`)
     setConnectingState(false)

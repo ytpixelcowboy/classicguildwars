@@ -40,7 +40,7 @@ export default function PreBanningFragment({ params }: { params: { socket: Socke
         
         fetchProfileName(params.address).then(setClient1Name);
         fetchProfileName(params.client2_address).then(setClient2Name);
-    },[params])
+    },[])
 
 
     params.socket.on('respondPendingHandshake', (reason, battleId, requester, status)=>{
@@ -55,14 +55,9 @@ export default function PreBanningFragment({ params }: { params: { socket: Socke
         }
     })
 
-    function requestBattleInfo(){
-        console.log("Battle Request submitted: banning")
-        params.socket.emit('battleInfo', params.battleId, params.address);
-    }
-
     function checkForPendingRequest(){
         console.log("Battle Request submitted: banning")
-        params.socket.emit('pendingHandshake', 'moveToWaiting', params.battleId, params.address, );
+        params.socket.emit('pendingHandshake', 'moveToWaiting', params.battleId, params.address);
     }
 
     function setReady(){

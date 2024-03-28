@@ -1,8 +1,8 @@
 import { useState,useEffect } from "react"
 
-export default function TurnAnnouncer({params} : {params : {header : string}}){
+export default function TurnAnnouncer({params} : {params : {header : string, setVisible : boolean}}){
 
-    const [isVisible, setIsVisible] = useState<boolean>();
+    const [isVisible, setIsVisible] = useState<boolean>(params.setVisible);
 
     useEffect(() => {
         // Hide the announcement after 3 seconds
